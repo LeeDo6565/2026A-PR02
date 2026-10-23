@@ -1,1 +1,6 @@
-pip freeze > requirements.txt
+numpy
+pandas
+scikit-learn
+matplotlib
+pytest
+coverage

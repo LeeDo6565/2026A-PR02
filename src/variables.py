@@ -62,3 +62,42 @@ class VariableCategorielle(Variable):
     """Un choix unique parmi une liste de valeurs."""
     def __init__(self, nom : str, libelle: str, valeurs :list[str]):
         super().__init__(nom, libelle)
+        self._valeurs = list(valeurs)   # garde un copue de la liste des choix possibles 
+
+        @property
+        def valeurs(self)-> list[str]:
+            return list(self._valeurs ) #ne renvoie pas la liste d'origine, mais une copie 
+
+        def valider(self,saisie: str):
+            if saisie not in self._valeurs:
+                raise DonneeInvalideError(f"{self._libelle} : choississez une valeur dans la liste")  # Si le choix n'est pas dans la liste (ou est vide), erreur claire
+            return saisie
+
+
+
+class VariableMultiple(VariableCategorielle):  # Enfant de VariableCategorielle : même liste de valeurs, mais plusieurs choix possibles
+    """Un ou plusieurs choix parmi une liste de valeurs (cases à cocher)."""
+
+    def valider(self,saisie: list[str]): ## Redéfinit valider : ici la saisie est une liste (les cases cochées)
+        if not saisie:
+            raise DonneeInvalideError(f"{self._libelle}: cochez au moins une case.")# liste vide: aucune case cochée
+
+        for valeur in saisie:
+            if valeur not in self._valeurs: 
+                raise DonneeInvalideError(f"{self._libelle}: « {valeur} » est inconnu.") # Vérifie chaque case cochée contre la liste des valeurs permises
+
+        return list(saisie)
+
+
+"""fonction qui assemble tout"""
+def creer_variables(metadonnees: dict):
+    m = metadonnees  # Raccourci pour écrire m[...] au lieu de metadonnees[...]
+    return[
+        VariableNumerique("budget", "Budget ($)", m["budget_min"], m["budget_max"]),# Une variable numérique dont les bornes viennent du fichier JSON
+        VariableNumerique("runtime", "Durée (minutes)", m["runtime_min"], m["runtime_max"]),
+        VariableNumerique("annee", "Année de sortie", m["annee_min"], m["annee_max"]),
+        VariableCategorielle("original_language", "Langue d'origine", m["langues"]),  # Une liste déroulante : un seul choix parmi les langues
+        VariableMultiple("genres", "Genres", m["genres"]),# Des cases à cocher : plusieurs choix parmi les genres
+
+    ]
+

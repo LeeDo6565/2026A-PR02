@@ -15,7 +15,7 @@ class Application:
     """Fenêtre principale : formulaire, résultat, graphique et historique."""
 
     def __init__(self, racine: tk.Tk, metadonnees: dict,
-                 predire: Callable[[dict], float]) -> None: ## Constructeur : reçoit la fenêtre, les métadonnées et la fonction de prédiction
+                 predire: Callable[[dict], float]) -> None: # Constructeur : reçoit la fenêtre, les métadonnées et la fonction de prédiction
         self._racine = racine # Garde la fenêtre principale (attribut protégé)
         self._predire = predire #  Garde la fonction de prédiction : provisoire aujourd'hui, le vrai modèle plus tard
         self._variables = creer_variables(metadonnees) # Crée les cinq variables (budget, durée, année, langue, genres) depuis le JSON
@@ -49,12 +49,18 @@ class Application:
 
     def _creer_champ(self, parent: ttk.Frame, variable: Variable, ligne: int):
         """Crée le widget adapté au type de la variable."""
-        if isinstance(variable, VariableMultiple):  # avant Categorielle : c'est son enfant
+        if isinstance(variable, VariableMultiple):  # avant Categorielle : c'est son enfant. En d'autre termes, VariableMultiple est un cas particulier de VariableCategorielle, donc on teste d'abord le cas particulier     
+            # Cas 1 : plusieurs choix possibles : on crée un cadre avec plusieurs cases à cocher
+            # à tester en premier, car VariableMultiple est aussi une VariableCategorielle 
             cadre = ttk.Frame(parent)
             cadre.grid(row=ligne, column=1, sticky="w", padx=(10, 0))
-            cases = {}
-            for i, valeur in enumerate(variable.valeurs):
-                cases[valeur] = tk.BooleanVar()
+            #un petit cadre pour contenir les cases à cocher, à droite du libellé(Genres)
+            cases = {} #dictionnaire : nom de genre -> case cochée( vrai) ou non (faux)
+
+            for i, valeur in enumerate(variable.valeurs): # pour chque genre avec son numéro i 
+
+                cases[valeur] = tk.BooleanVar()    # une variable vrai/faux qui suit l'état de la case
+
                 ttk.Checkbutton(cadre, text=valeur, variable=cases[valeur]).grid(
                     row=i // COLONNES_GENRES, column=i % COLONNES_GENRES, sticky="w", padx=4)
             return cases

@@ -29,7 +29,7 @@ def nettoyer_donnees(df:pd.DataFrame, votes_min: int = 10)-> pd.DataFrame:
 
 def extraire_genres(chaine:str)-> list[str]:
     texte= chaine.replace("Science Fiction", "Science-Fiction").replace("TV Movie", "TV-Movie") #met Action Science Fiction en ['Action', 'Science-Fiction']
-    return texte 
+    return texte.split()# pour renvoyer le texte entier 
 
 def construire_metadonnees(df: pd.DataFrame, films_min_langue: int=20) -> dict:
     comptes= df["original_language"].value_counts() # Compte les films par langue : un tableau du genre en → 3000, fr → 60, ...

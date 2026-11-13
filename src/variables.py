@@ -17,11 +17,11 @@ class Variable(ABC):
 
     @property
     def nom(self):   # @property permet d'écrire variable.nom (sans parenthèses) pour lire l'attribut
-        return self.nom
+        return self._nom
 
     @property
     def libelle(self):
-        return self.libelle 
+        return self._libelle 
 
     @abstractmethod
     def valider(self, saisie):#Méthode abstraite : chaque classe enfant DOIT la redéfinir à sa façon
@@ -64,11 +64,11 @@ class VariableCategorielle(Variable):
         super().__init__(nom, libelle)
         self._valeurs = list(valeurs)   # garde un copue de la liste des choix possibles 
 
-        @property
-        def valeurs(self)-> list[str]:
+    @property
+    def valeurs(self)-> list[str]:
             return list(self._valeurs ) #ne renvoie pas la liste d'origine, mais une copie 
 
-        def valider(self,saisie: str):
+    def valider(self,saisie: str):
             if saisie not in self._valeurs:
                 raise DonneeInvalideError(f"{self._libelle} : choississez une valeur dans la liste")  # Si le choix n'est pas dans la liste (ou est vide), erreur claire
             return saisie

@@ -1,103 +1,125 @@
 import json
 import os
-import tkinter as tk  #bibliothèque graphique 
-from tkinter import messagebox, ttk
-from typing import Callable  # sert aux annotations de type 
+import tkinter as tk
+from tkinter import messagebox
+from typing import Callable
 
+import icones
+import theme
 from exceptions import DonneeInvalideError
-from variables import (Variable, VariableCategorielle, VariableMultiple,creer_variables)
+from variables import (Variable, VariableCategorielle, VariableMultiple,
+                       creer_variables)
 
-
-COLONNES_GENRES = 3    # Nombre de colonnes pour afficher les cases à cocher des genres (modifiable)                  
+COLONNES_GENRES = 3
 
 
 class Application:
     """Fenêtre principale : formulaire, résultat, graphique et historique."""
 
     def __init__(self, racine: tk.Tk, metadonnees: dict,
-                 predire: Callable[[dict], float]) -> None: # Constructeur : reçoit la fenêtre, les métadonnées et la fonction de prédiction
-        self._racine = racine # Garde la fenêtre principale (attribut protégé)
-        self._predire = predire #  Garde la fonction de prédiction : provisoire aujourd'hui, le vrai modèle plus tard
-        self._variables = creer_variables(metadonnees) # Crée les cinq variables (budget, durée, année, langue, genres) depuis le JSON
-        self._champs: dict = {}  # Dictionnaire : nom de variable -> les objets Tkinter qui contiennent sa saisie
-        self._texte_resultat = tk.StringVar(value="Note estimée : —") # Texte du résultat : quand on le change, le label à l'écran se met à jour tout seul
+                 predire: Callable[[dict], float]) -> None:
+        self._racine = racine
+        self._predire = predire
+        self._variables = creer_variables(metadonnees)
+        self._champs: dict = {}  # nom de variable -> variable(s) Tkinter
+        self._texte_resultat = tk.StringVar(value="Note estimée : —")
 
-        racine.title("Estimateur de note de film") # Titre dans la barre de la fenêtre
-        racine.columnconfigure(1, weight=1)  
+        racine.title("Estimateur de note de film")
+        theme.appliquer_theme(racine)
+        icones.appliquer_curseur(racine)
+        self._creer_images()
+        racine.columnconfigure(1, weight=1)
         racine.columnconfigure(2, weight=1)
-        # Les colonnes du milieu et de droite s'agrandissent avec la fenêtre
-
         self._construire_titre()
         self._construire_formulaire()
         self._construire_centre()
         self._construire_graphique()
         self._construire_historique()
-        # Construit chaque zone de la maquette, l'une après l'autre
 
-
+    def _creer_images(self) -> None:
+        """Dessine les icônes (il faut les garder dans des attributs, sinon Tkinter les efface)."""
+        self._img_coeur = icones.creer_icone("coeur")
+        self._img_etoile = icones.creer_icone("etoile")
+        self._img_sourire = icones.creer_icone("sourire")
+        self._img_dossier = icones.creer_icone("dossier")
+        self._img_etoile_vide = icones.creer_icone("etoile", remplacements={"j": theme.BLANC})
 
     def _construire_titre(self) -> None:
-        ttk.Label(self._racine, text="Estimateur de note de film",
-                  font=("Arial", 20, "bold")).grid(row=0, column=0, columnspan=3, pady=(12, 4)) # Titre en gros caractères, ligne 0, étalé sur les trois colonnes
+        tk.Label(self._racine, text="Estimateur de note de film", bg=theme.FOND,
+                 fg=theme.BLANC, font=theme.POLICE_TITRE).grid(
+                     row=0, column=0, columnspan=3, pady=(14, 6))
 
     def _construire_formulaire(self) -> None:
-        cadre = ttk.LabelFrame(self._racine, text="Caractéristiques du film", padding=10)  # Un cadre avec un titre qui regroupe les champs
-        cadre.grid(row=1, column=0, sticky="n", padx=10, pady=10)  # Le place à gauche (colonne 0, ligne 1), collé en haut (« n » = nord)
-        for ligne, variable in enumerate(self._variables): # Pour chaque variable, avec son numéro de ligne (0, 1, 2...)
-            ttk.Label(cadre, text=variable.libelle).grid(row=ligne, column=0, sticky="nw", pady=4) #Affiche son libellé à gauche (ex. « Budget ($) »)
-            self._champs[variable.nom] = self._creer_champ(cadre, variable, ligne) # Crée le champ adapté et mémorise sa saisie sous le nom de la variable
+        conteneur, corps = theme.creer_fenetre(
+            self._racine, "Caractéristiques du film", theme.BARRE, self._img_coeur)
+        conteneur.grid(row=1, column=0, sticky="n", padx=14, pady=10)
+        for ligne, variable in enumerate(self._variables):
+            theme.creer_etiquette(corps, variable.libelle).grid(
+                row=ligne, column=0, sticky="nw", pady=5)
+            self._champs[variable.nom] = self._creer_champ(corps, variable, ligne)
 
-    def _creer_champ(self, parent: ttk.Frame, variable: Variable, ligne: int):
+    def _creer_champ(self, parent: tk.Misc, variable: Variable, ligne: int):
         """Crée le widget adapté au type de la variable."""
-        if isinstance(variable, VariableMultiple):  # avant Categorielle : c'est son enfant. En d'autre termes, VariableMultiple est un cas particulier de VariableCategorielle, donc on teste d'abord le cas particulier     
-            # Cas 1 : plusieurs choix possibles : on crée un cadre avec plusieurs cases à cocher
-            # à tester en premier, car VariableMultiple est aussi une VariableCategorielle 
-            cadre = ttk.Frame(parent)
-            cadre.grid(row=ligne, column=1, sticky="w", padx=(10, 0))
-            #un petit cadre pour contenir les cases à cocher, à droite du libellé(Genres)
-            cases = {} #dictionnaire : nom de genre -> case cochée( vrai) ou non (faux)
-
-            for i, valeur in enumerate(variable.valeurs): # pour chque genre avec son numéro i 
-
-                cases[valeur] = tk.BooleanVar()    # une variable vrai/faux qui suit l'état de la case
-
-                ttk.Checkbutton(cadre, text=valeur, variable=cases[valeur]).grid(
+        if isinstance(variable, VariableMultiple):  # avant Categorielle : c'est son enfant
+            cadre = tk.Frame(parent, bg=parent.cget("bg"))
+            cadre.grid(row=ligne, column=1, sticky="w", padx=(12, 0))
+            cases = {}
+            for i, valeur in enumerate(variable.valeurs):
+                cases[valeur] = tk.BooleanVar()
+                theme.creer_case(cadre, valeur, cases[valeur]).grid(
                     row=i // COLONNES_GENRES, column=i % COLONNES_GENRES, sticky="w", padx=4)
             return cases
         if isinstance(variable, VariableCategorielle):
             saisie = tk.StringVar()
-            ttk.Combobox(parent, textvariable=saisie, values=variable.valeurs,
-                         state="readonly").grid(row=ligne, column=1, sticky="w", padx=(10, 0))
+            theme.creer_liste(parent, saisie, variable.valeurs).grid(
+                row=ligne, column=1, sticky="w", padx=(12, 0))
             return saisie
         saisie = tk.StringVar()  # VariableNumerique
-        ttk.Entry(parent, textvariable=saisie).grid(row=ligne, column=1, sticky="w", padx=(10, 0))
+        theme.creer_champ_texte(parent, saisie).grid(
+            row=ligne, column=1, sticky="w", padx=(12, 0))
         return saisie
 
     def _construire_centre(self) -> None:
         """Colonne du milieu : le résultat en haut, le bouton Prédire en dessous."""
-        cadre = ttk.Frame(self._racine)
-        cadre.grid(row=1, column=1, sticky="n", padx=10, pady=10)
-        zone = ttk.LabelFrame(cadre, text="Résultat", padding=20)
-        zone.pack(fill="x")
-        ttk.Label(zone, textvariable=self._texte_resultat,
-                  font=("Arial", 16, "bold")).pack()
-        ttk.Button(cadre, text="Prédire", command=self._on_predire).pack(pady=20)
+        conteneur, corps = theme.creer_fenetre(
+            self._racine, "Résultat", theme.BARRE_ALT, self._img_sourire)
+        conteneur.grid(row=1, column=1, sticky="n", padx=14, pady=10)
+        tk.Label(corps, textvariable=self._texte_resultat, bg=theme.BLANC, fg=theme.NOIR,
+                 font=("Courier New", 16, "bold"), relief="solid", bd=2,
+                 padx=16, pady=12).pack()
+        self._construire_etoiles(corps)
+        theme.creer_bouton(corps, "Prédire", self._on_predire).pack(pady=(14, 4))
+
+    def _construire_etoiles(self, parent: tk.Misc) -> None:
+        """Rangée de cinq étoiles qui se remplissent selon la note estimée."""
+        cadre = tk.Frame(parent, bg=parent.cget("bg"))
+        cadre.pack(pady=(12, 0))
+        self._etoiles = []
+        for _ in range(5):
+            etoile = tk.Label(cadre, image=self._img_etoile_vide, bg=parent.cget("bg"))
+            etoile.pack(side="left", padx=2)
+            self._etoiles.append(etoile)
+
+    def _afficher_etoiles(self, note: float) -> None:
+        pleines = icones.nombre_etoiles(note)
+        for i, etoile in enumerate(self._etoiles):
+            etoile.configure(image=self._img_etoile if i < pleines else self._img_etoile_vide)
 
     def _construire_graphique(self) -> None:
         """Colonne de droite : emplacement du graphique (ajouté à l'étape suivante)."""
-        self._cadre_graphique = ttk.LabelFrame(
-            self._racine, text="Distribution des notes", padding=10)
-        self._cadre_graphique.grid(row=1, column=2, sticky="nsew", padx=10, pady=10)
-        ttk.Label(self._cadre_graphique,
-                  text="Le graphique apparaîtra ici.").pack(expand=True)
+        conteneur, self._cadre_graphique = theme.creer_fenetre(
+            self._racine, "Distribution des notes", theme.BARRE, self._img_etoile)
+        conteneur.grid(row=1, column=2, sticky="nsew", padx=14, pady=10)
+        theme.creer_etiquette(self._cadre_graphique,
+                              "Le graphique apparaîtra ici.").pack(expand=True)
 
     def _construire_historique(self) -> None:
         """Bandeau du bas : historique des prédictions (ajouté à l'étape suivante)."""
-        cadre = ttk.LabelFrame(self._racine, text="Historique des prédictions", padding=10)
-        cadre.grid(row=2, column=0, columnspan=3, sticky="ew", padx=10, pady=(0, 10))
-        ttk.Button(cadre, text="Afficher",
-                   command=self._on_afficher_historique).pack(side="right")
-        ttk.Label(cadre, text="Tableau des prédictions").pack(side="left")
+        conteneur, corps = theme.creer_fenetre(
+            self._racine, "Historique des prédictions", theme.BARRE_ALT, self._img_dossier)
+        conteneur.grid(row=2, column=0, columnspan=3, sticky="ew", padx=14, pady=(4, 14))
+        theme.creer_bouton(corps, "Afficher", self._on_afficher_historique).pack(side="right")
+        theme.creer_etiquette(corps, "Tableau des prédictions").pack(side="left")
 
     def _lire_saisies(self) -> dict:
         """Lit et valide tous les champs. Lève DonneeInvalideError au premier problème."""
@@ -119,6 +141,7 @@ class Application:
             return
         note = self._predire(valeurs)
         self._texte_resultat.set(f"Note estimée : {note:.1f} / 10")
+        self._afficher_etoiles(note)
 
     def _on_afficher_historique(self) -> None:
         messagebox.showinfo("Historique", "L'historique n'est pas encore disponible.")

@@ -43,11 +43,20 @@ class Application:
         self._img_sourire = icones.creer_icone("sourire")
         self._img_dossier = icones.creer_icone("dossier")
         self._img_etoile_vide = icones.creer_icone("etoile", remplacements={"j": theme.BLANC})
+        self._img_bulle = icones.creer_icone("bulle")
+        self._img_disque = icones.creer_icone("disque")
+        self._img_lecture = icones.creer_icone("lecture")
+        self._img_pause = icones.creer_icone("pause")
+        self._img_enregistrer = icones.creer_icone("enregistrer")
 
     def _construire_titre(self) -> None:
-        tk.Label(self._racine, text="Estimateur de note de film", bg=theme.FOND,
-                 fg=theme.BLANC, font=theme.POLICE_TITRE).grid(
-                     row=0, column=0, columnspan=3, pady=(14, 6))
+        """Titre entouré de deux décorations : une bulle à gauche, un disque à droite."""
+        cadre = tk.Frame(self._racine, bg=theme.FOND)
+        cadre.grid(row=0, column=0, columnspan=3, pady=(14, 6))
+        tk.Label(cadre, image=self._img_bulle, bg=theme.FOND).pack(side="left", padx=14)
+        tk.Label(cadre, text="Estimateur de note de film", bg=theme.FOND,
+                 fg=theme.NOIR, font=theme.POLICE_TITRE).pack(side="left")
+        tk.Label(cadre, image=self._img_disque, bg=theme.FOND).pack(side="left", padx=14)
 
     def _construire_formulaire(self) -> None:
         conteneur, corps = theme.creer_fenetre(
@@ -89,6 +98,14 @@ class Application:
                  padx=16, pady=12).pack()
         self._construire_etoiles(corps)
         theme.creer_bouton(corps, "Prédire", self._on_predire).pack(pady=(14, 4))
+        self._construire_decor_media(corps)
+
+    def _construire_decor_media(self, parent: tk.Misc) -> None:
+        """Rangée décorative de trois ronds (lecture, pause, enregistrement)."""
+        cadre = tk.Frame(parent, bg=parent.cget("bg"))
+        cadre.pack(pady=(14, 0))
+        for image in (self._img_lecture, self._img_pause, self._img_enregistrer):
+            tk.Label(cadre, image=image, bg=parent.cget("bg")).pack(side="left", padx=4)
 
     def _construire_etoiles(self, parent: tk.Misc) -> None:
         """Rangée de cinq étoiles qui se remplissent selon la note estimée."""
@@ -160,4 +177,3 @@ def lancer_application() -> None:
     racine = tk.Tk()
     Application(racine, metadonnees, predire_provisoire)
     racine.mainloop()
-

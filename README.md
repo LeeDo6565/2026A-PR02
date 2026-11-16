@@ -2,3 +2,7 @@
 Projet 2 de la session d'automne
 
 
+métrique d'évaluation--> R2 
+=======
+
+

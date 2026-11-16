@@ -42,5 +42,6 @@ def construire_metadonnees(df: pd.DataFrame, films_min_langue: int=20) -> dict:
 
 def sauvegarder_metadonnees(meta: dict, chemin: str):
     os.makedirs(os.path.dirname(chemin), exist_ok=True) # Crée le dossier du fichier (ex. « modeles ») s'il n'existe pas déjà
+    #os.path.dirname récupère le dossier parent d'un chemin de fichier. Alors chemin vaut "modeles/metadonnees.json" et  os.path.dirname(chemin) renvoie "modeles"
     with open(chemin, "w", encoding="utf-8") as f:           
-        json.dump(meta, f, ensure_ascii=False, indent=2)
+        json.dump(meta, f, ensure_ascii=False, indent=2) #indent=2 veut dire que le JSON enregistré sera indenté avec deux espaces par niveau 

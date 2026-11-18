@@ -34,7 +34,7 @@ def extraire_genres(chaine:str)-> list[str]:
 def construire_metadonnees(df: pd.DataFrame, films_min_langue: int=20) -> dict: # les langues ayant au moins 20 films sont conservées 
     comptes= df["original_language"].value_counts() # Compte les films par langue : un tableau du genre en → 3000, fr → 60, ...
     langues = sorted(comptes[comptes >= films_min_langue].index) #Garde les langues avec au moins 20 films, prend leurs noms et trie
-    genres= sorted({g for ligne in df["genres"] for g in extraire_genres(ligne)})# Parcourt chaque film, découpe ses genres, et garde chaque genre une seule fois, trié
+    genres= sorted({g for ligne in df["genres"] for g in extraire_genres(ligne)})# Parcourt chaque film, découpe ses genres, et garde chaque genre une seule fois, trié()
     return {"budget_min": int(df["budget"].min()), "budget_max": int(df["budget"].max()), # Le plus petit et le plus grand budget des données
             "runtime_min": int(df["runtime"].min()), "runtime_max": int(df["runtime"].max()), # idem pour la durée
             "annee_min": int(df["annee"].min()), "annee_max": int(df["annee"].max()), # idem pour l'année de sortie 

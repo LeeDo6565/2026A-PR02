@@ -1,14 +1,11 @@
-import tkinter as tk
-# Tkinter : la bibliothèque qui crée les fenêtres, les boutons, les champs...
-from tkinter import ttk
-# ttk : une variante plus moderne de certains widgets (on s'en sert pour la liste déroulante)
+import tkinter as tk # fournit les widget classiques 
+#crée les fenêtres, les boutons, les champs...
+from tkinter import ttk # fournit les widget thématisés
+# variante plus moderne de certains widgets (on s'en sert pour la liste déroulante)
 from typing import Callable
 # Sert seulement à décrire le type d'une fonction dans les annotations
 
-# ---------------------------------------------------------------------------
-# Les couleurs : on les range ici pour pouvoir changer tout le style en un seul endroit.
-# Une couleur s'écrit « #RRGGBB » : rouge, vert, bleu, chacun de 00 à FF (en hexadécimal).
-# ---------------------------------------------------------------------------
+
 FOND = "#F8D3B8"         # fond du bureau (pêche)
 FENETRE = "#FFF6EA"      # fond des fenêtres (crème)
 BARRE = "#F4623A"        # barre de titre (orange-rouge)
@@ -18,6 +15,8 @@ NOIR = "#2B2D6E"         # contours et texte (bleu nuit, malgré le nom !)
 BLANC = "#FFFFFF"
 OMBRE_COULEUR = "#E9A98C"  # ombre douce
 
+
+
 # Les polices : (nom de la police, taille, style)
 POLICE = ("Courier New", 11, "bold")          # texte normal
 POLICE_PETITE = ("Courier New", 10, "bold")   # petit texte (cases à cocher, boutons de barre)
@@ -25,14 +24,18 @@ POLICE_TITRE = ("Courier New", 24, "bold")    # gros titre
 OMBRE = 5                # décalage de l'ombre, en pixels
 
 
-def appliquer_theme(racine: tk.Tk) -> None:
+def appliquer_theme(racine: tk.Tk) -> None: # racine: tk.Tk ->  représente la fenêtre principal
     """Règle le fond de la fenêtre et le style des listes déroulantes."""
     racine.configure(bg=FOND)
-    # Colore le fond de la fenêtre principale
+    # Colore le fond (background) de la fenêtre principale
     style = ttk.Style(racine)
-    # L'objet qui permet de personnaliser les widgets « ttk »
+    #Style pour choisir le theme( permet d'utiliser "clam")
+    #L'objet qui permet de personnaliser les widgets « ttk », comme les listes déroulantes
+    #racine dans les parenthèse indique à Tkinter qquelle fenêtre à utiliser
+    
     style.theme_use("clam")
     # Le thème « clam » accepte les couleurs personnalisées (celui de Windows les ignore)
+    
     style.configure("Retro.TCombobox", fieldbackground=BLANC, background=ORANGE,
                     foreground=NOIR, bordercolor=NOIR, arrowcolor=NOIR,
                     lightcolor=NOIR, darkcolor=NOIR, padding=4)

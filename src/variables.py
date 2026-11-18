@@ -8,37 +8,38 @@ from exceptions import DonneeInvalideError
 def _fmt(x: float)-> str:
     return str(int(x))if float(x).is_integer else str(x)# Affiche 380000000 plutôt que 3.8e+08.
 
-class Variable(ABC):    
+class Variable(ABC): # classe parente(hérite de ABC)    
 
     def __init__(self,nom: str, libelle: str):
         self._nom= nom  # Nom technique de la colonne 
         self._libelle= libelle # attribut protégé car ils doivent pas être changé en cours de route. ex "budget" doit correspondre exactement à une colonne 
-        #Texte affiché à l'utilisateur (ex. « Budget ($) »)
+        #Texte affiché à l'utilisateur (ex. « Budget ($) ») -> le nom sur l'interface
 
     @property
-    def nom(self):   # @property permet d'écrire variable.nom (sans parenthèses) pour lire l'attribut
+    def nom(self):   # @property permet d'écrire variable.nom (sans parenthèses) et non variable.nom()
         return self._nom
 
     @property
     def libelle(self):
         return self._libelle 
 
-    @abstractmethod
+    @abstractmethod #
     def valider(self, saisie):#Méthode abstraite : chaque classe enfant DOIT la redéfinir à sa façon
         """Renvoie la valeur validée, ou lève DonneeInvalideError."""
 
     def __str__(self):
-        return f"{self.libelle} ({self.nom})"  # Exemple : « Budget ($) (budget)
+        return f"{self.libelle} ({self.nom})"  # Exemple : « Budget ($) (budget)» combine le libellé et le nom technique
 
 
 
-class VariableNumerique(Variable): #Hérite de Variable : elle reprend nom, libelle et __str__
+class VariableNumerique(Variable): #Hérite de Variable : elle reprend nom, libelle, valider et __str__
     def __init__(self, nom : str, libelle:str, minimum: float, maximum: float):
         super().__init__(nom, libelle) # Appelle le constructeur de la classe parente pour ranger nom et libelle
         self._minimum = minimum
         self._maximum = maximum
+        #pour l'intervalle des données permises
 
-    def valider(self, saisie : str):
+    def valider(self, saisie : str): # on définit valider pour la class VariableNumérique
         texte= str(saisie).strip().replace(",", ".") # Convertit en texte, retire les espaces autour, et accepte la virgule décimale (« 7,5 »)
         if texte=="":
             raise DonneeInvalideError(f"{self._libelle} : le champ est vide") # Champ vide : lève l'exception
@@ -46,13 +47,13 @@ class VariableNumerique(Variable): #Hérite de Variable : elle reprend nom, libe
         try: 
             valeur =float(texte) # Essaie de convertir le texte en nombre
 
-        except ValueError: ## Si ce n'est pas un nombre (« abc »), Python lève ValueError
+        except ValueError: # Si ce n'est pas un nombre (« abc »), Python lève ValueError
             raise DonneeInvalideError(f"{self._libelle} : « {saisie} » n'est pas un nombre.")
 
 
         if not self._minimum <= valeur <= self._maximum:   # Vérifie que la valeur est dans l'intervalle (min ≤ valeur ≤ max)
             raise DonneeInvalideError(f"{self._libelle} : la valeur doit être entre "
-                                    f"{_fmt(self._minimum)} et {_fmt(self._maximum)}.") ## Hors intervalle : message qui indique les bornes
+                                    f"{_fmt(self._minimum)} et {_fmt(self._maximum)}.") # Hors intervalle : message qui indique les bornes
 
 
         return valeur 
@@ -62,7 +63,7 @@ class VariableCategorielle(Variable):
     """Un choix unique parmi une liste de valeurs."""
     def __init__(self, nom : str, libelle: str, valeurs :list[str]):
         super().__init__(nom, libelle)
-        self._valeurs = list(valeurs)   # garde un copue de la liste des choix possibles 
+        self._valeurs = list(valeurs)   # garde un copie de la liste des choix possibles 
 
     @property
     def valeurs(self)-> list[str]:
@@ -78,7 +79,7 @@ class VariableCategorielle(Variable):
 class VariableMultiple(VariableCategorielle):  # Enfant de VariableCategorielle : même liste de valeurs, mais plusieurs choix possibles
     """Un ou plusieurs choix parmi une liste de valeurs (cases à cocher)."""
 
-    def valider(self,saisie: list[str]): ## Redéfinit valider : ici la saisie est une liste (les cases cochées)
+    def valider(self,saisie: list[str]): # Redéfinit valider : ici la saisie est une liste (les cases cochées)
         if not saisie:
             raise DonneeInvalideError(f"{self._libelle}: cochez au moins une case.")# liste vide: aucune case cochée
 

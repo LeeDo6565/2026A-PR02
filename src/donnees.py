@@ -28,10 +28,10 @@ def nettoyer_donnees(df:pd.DataFrame, votes_min: int = 10)-> pd.DataFrame:
 
 
 def extraire_genres(chaine:str)-> list[str]:
-    texte= chaine.replace("Science Fiction", "Science-Fiction").replace("TV Movie", "TV-Movie") #met Action Science Fiction en ['Action', 'Science-Fiction']
-    return texte.split()# pour renvoyer le texte entier 
+    texte= chaine.replace("Science Fiction", "Science-Fiction").replace("TV Movie", "TV-Movie") #met Action Science Fiction en ['Action', 'Science-Fiction'] -> dans le but de faire un seul mot(on peut appliquer split)
+    return texte.split()# renvoie une liste de mots ["Action", "Science-Fiction"]
 
-def construire_metadonnees(df: pd.DataFrame, films_min_langue: int=20) -> dict:
+def construire_metadonnees(df: pd.DataFrame, films_min_langue: int=20) -> dict: # les langues ayant au moins 20 films sont conservées 
     comptes= df["original_language"].value_counts() # Compte les films par langue : un tableau du genre en → 3000, fr → 60, ...
     langues = sorted(comptes[comptes >= films_min_langue].index) #Garde les langues avec au moins 20 films, prend leurs noms et trie
     genres= sorted({g for ligne in df["genres"] for g in extraire_genres(ligne)})# Parcourt chaque film, découpe ses genres, et garde chaque genre une seule fois, trié

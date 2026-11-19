@@ -35,16 +35,17 @@ def appliquer_theme(racine: tk.Tk) -> None: # racine: tk.Tk ->  représente la f
     
     style.theme_use("clam")
     # Le thème « clam » accepte les couleurs personnalisées (celui de Windows les ignore)
-    
+
     style.configure("Retro.TCombobox", fieldbackground=BLANC, background=ORANGE,
                     foreground=NOIR, bordercolor=NOIR, arrowcolor=NOIR,
                     lightcolor=NOIR, darkcolor=NOIR, padding=4)
-    # Crée un style nommé « Retro.TCombobox » : fond blanc, bouton orange, contours bleu nuit
+    # Crée un style personalisé nommé « Retro.TCombobox » : fond blanc, bouton orange, contours bleu nuit
     style.map("Retro.TCombobox", fieldbackground=[("readonly", BLANC)],
               selectbackground=[("readonly", BLANC)],
               selectforeground=[("readonly", NOIR)])
+    #style.map dit d'utiliser ces couleurs quand la Combobox est en état readonly
     # Garde le fond blanc et le texte bleu nuit même quand la liste est en lecture seule
-    racine.option_add("*TCombobox*Listbox.font", POLICE)
+    racine.option_add("*TCombobox*Listbox.font", POLICE)  #ajoute des réglages à la fenêtre principal
     racine.option_add("*TCombobox*Listbox.background", BLANC)
     racine.option_add("*TCombobox*Listbox.selectBackground", BARRE)
     racine.option_add("*TCombobox*Listbox.selectForeground", BLANC)

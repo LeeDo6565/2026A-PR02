@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from exceptions import DonneeInvalideError
 
 def _fmt(x: float)-> str:
-    return str(int(x))if float(x).is_integer else str(x)# Affiche 380000000 plutôt que 3.8e+08.
+    return str(int(x))if float(x).is_integer() else str(x)# Affiche 380000000 plutôt que 3.8e+08.
 
 class Variable(ABC): # classe parente(hérite de ABC)    
 

@@ -1,9 +1,9 @@
 import pandas as pd
-import sys # module qui donne accès à certaines informations et fonctions liées à l'interpréteur, notamment la liste des dossiers où Python cherche les modules
-from pathlib import Path
+# import sys # module qui donne accès à certaines informations et fonctions liées à l'interpréteur, notamment la liste des dossiers où Python cherche les modules
+# from pathlib import Path
 
-sys.path.append(str(Path(__file__).resolve().parents[1] / "src")) 
-# ajouter le dossier src a cette liste de dossiers, afin d'être capable d'importer donnees
+# sys.path.append(str(Path(__file__).resolve().parents[1] / "src")) 
+# # ajouter le dossier src a cette liste de dossiers, afin d'être capable d'importer donnees
 from donnees import nettoyer_donnees
 
 def test_nettoyer_retire_budget_zero():

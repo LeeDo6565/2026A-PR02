@@ -1,5 +1,5 @@
 {
-  "budget_min": 1,
+  "budget_min": 12000,
   "budget_max": 380000000,
   "runtime_min": 41,
   "runtime_max": 338,
@@ -31,5 +31,18 @@
     "Thriller",
     "War",
     "Western"
-  ]
+  ],
+  "colonnes": [
+    "budget",
+    "runtime",
+    "annee",
+    "original_language",
+    "genres"
+  ],
+  "rmse_modele": 0.682378122468235,
+  "rmse_reference": 0.8528596727690586,
+  "r2_modele": 0.35912161887103033,
+  "r2_reference": -0.0011072149156856614,
+  "taille_entrainement": 2811,
+  "taille_test": 703
 }

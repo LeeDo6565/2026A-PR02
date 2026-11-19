@@ -3,7 +3,7 @@ import pytest
 from exceptions import DonneeInvalideError
 
 from variables import (VariableCategorielle, VariableMultiple,
-                       VariableNumerique, creer_variables)
+                       VariableNumerique, creer_variables, _fmt)
 
 # --- Fixtures : des objets préparés, réutilisables par plusieurs tests -----
 @pytest.fixture   #marque une fonction qui prépare un objet réutilisable par plusieurs tests, pour ne pas le recréer à la main dans chacun.
@@ -114,3 +114,9 @@ def test_creer_variables_construit_les_cinq_champs(): # On fournit de petites m�
 
 def test_str_affiche_libelle_et_nom(budget): ## Teste la méthode spéciale __str__ : ce que print(variable) affiche
     assert str(budget) == "Budget ($) (budget)"
+
+
+
+def test_fmt_garde_les_decimales():  # vérifie la correction du bogue is_integer()
+    assert _fmt(120.5) == "120.5"
+    assert _fmt(380000000.0) == "380000000"

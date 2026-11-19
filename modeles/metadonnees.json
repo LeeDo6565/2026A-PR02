@@ -32,6 +32,13 @@
     "War",
     "Western"
   ],
+  "colonnes": [
+    "budget",
+    "runtime",
+    "annee",
+    "original_language",
+    "genres"
+  ],
   "rmse_modele": 0.682378122468235,
   "rmse_reference": 0.8528596727690586,
   "r2_modele": 0.35912161887103033,

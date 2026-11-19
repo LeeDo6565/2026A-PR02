@@ -20,6 +20,7 @@ def main() -> None:
     """Nettoie les données, entraîne, évalue, puis sauvegarde le modèle et ses métadonnées."""
     films = nettoyer_donnees(charger_donnees(CHEMIN_CSV))
     meta = construire_metadonnees(films)
+    meta["colonnes"] = ["budget", "runtime", "annee", "original_language", "genres"]  # Les noms des colonnes d'entrée (exigé par l'énoncé), dans l'ordre du formulaire
 
     modele = Modele(meta["langues"], meta["genres"])
     resultats = modele.entrainer(films)

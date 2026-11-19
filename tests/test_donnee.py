@@ -18,5 +18,8 @@ def test_nettoyer_retire_budget_zero():
         "original_language": ["en", "en"],
         "vote_average": [6.0, 7.0],
     })
-    resultat= nettoyer_donnees(df)  # on transmet le tableau à nettoyer_donnees(df) 
+    resultat= nettoyer_donnees(df, films_min_langue = 1)  # on transmet le tableau à nettoyer_donnees(df) 
     assert list(resultat["title"])== ["B"] # on vérifie que le résultat ne contient que la titre B, car A n'est pas accepté(budget)
+    # AJOUT : ajout de films_min_langue = 1 , car sinon le test échoue. Le test est effectué avec 2 films à la fois,
+    #   donc le critère pour les langues (20 minimum) ne peut jamais être respecté et le film est retiré, même le critère de buget est respecté. 
+    #   en ajoutant films_min_langue = 1, on "force" un minimum et seulement le budget est réellement testé. 

@@ -76,6 +76,7 @@ class Modele:
         # min_samples_leaf=5 : chaque feuille contient au moins 5 films (arbres moins détaillés,
         # donc un fichier beaucoup plus léger et moins de surapprentissage)
         self._reference = DummyRegressor(strategy="mean")
+        self._notes_entrainement = np.array([])
         self._y_test = np.array([])
         self._y_predit = np.array([])
         self._resultats: dict = {}
@@ -84,6 +85,11 @@ class Modele:
     def resultats(self) -> dict:
         """Copie des métriques calculées par entrainer() (vide avant l'entraînement)."""
         return dict(self._resultats)
+
+    @property
+    def notes_entrainement(self) -> np.ndarray:
+        """Copie des notes de l'ensemble d'entraînement (pour le graphique de l'interface)."""
+        return self._notes_entrainement.copy()
 
     @chronometrer
     def entrainer(self, df: pd.DataFrame, taille_test: float = 0.2) -> dict:
@@ -101,6 +107,7 @@ class Modele:
 
         self._regresseur.fit(x_train, y_train)
         self._reference.fit(x_train, y_train)
+        self._notes_entrainement = y_train
         self._y_test = y_test
         self._y_predit = self._regresseur.predict(x_test)
         y_reference = self._reference.predict(x_test)

@@ -9,36 +9,61 @@ from tkinter import messagebox
 from typing import Callable
 # Sert seulement à décrire le type d'une fonction dans les annotations
 
+import numpy as np
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+# Le « pont » entre Matplotlib et Tkinter : il affiche une figure dans une fenêtre Tkinter
+from matplotlib.figure import Figure
+# Une figure Matplotlib (on n'utilise pas pyplot dans une interface Tkinter)
+
 import icones
 # Nos icônes dessinées en pixels, le curseur et les étoiles
 import theme
 # Nos couleurs, nos polices et nos fonctions qui créent les widgets rétro
 from exceptions import DonneeInvalideError
 # Notre exception personnalisée, levée quand une saisie est invalide
+from historique import Historique
+# L'historique des prédictions (fichier CSV)
+from modele import charger_modele
+# Charge le modèle entraîné (modele.joblib)
 from variables import (Variable, VariableCategorielle, VariableMultiple,
                        creer_variables)
 # Les classes de variables et la fonction qui les construit depuis les métadonnées
 
 COLONNES_GENRES = 3
 # Nombre de colonnes pour ranger les cases à cocher des genres (modifiable)
+RACINE_PROJET = os.path.join(os.path.dirname(__file__), "..")
+CHEMIN_META = os.path.join(RACINE_PROJET, "modeles", "metadonnees.json")
+CHEMIN_MODELE = os.path.join(RACINE_PROJET, "modeles", "modele.joblib")
+CHEMIN_HISTORIQUE = os.path.join(RACINE_PROJET, "historique", "predictions.csv")
+# Les chemins sont calculés à partir de l'emplacement de ce fichier : ça marche
+# peu importe le dossier d'où on lance le programme
 
 
 class Application:
     """Fenêtre principale : formulaire, résultat, graphique et historique."""
 
-    def __init__(self, racine: tk.Tk, metadonnees: dict,
-                 predire: Callable[[dict], float]) -> None:
-        # Le constructeur reçoit la fenêtre, les métadonnées et la fonction de prédiction
+    def __init__(self, racine: tk.Tk, metadonnees: dict, predire: Callable[[dict], float],
+                 notes: np.ndarray, historique: Historique) -> None:
+        # Le constructeur reçoit la fenêtre, les métadonnées, la fonction de prédiction,
+        # les notes d'entraînement (pour le graphique) et l'historique
         self._racine = racine
         # Garde la fenêtre principale (le _ devant = attribut protégé)
         self._predire = predire
-        # Garde la fonction de prédiction : provisoire aujourd'hui, le vrai modèle plus tard
+        # Garde la fonction de prédiction (la méthode predire du modèle entraîné)
+        self._notes = notes
+        self._historique = historique
+        # Composition : l'application contient l'historique, les variables et utilise le modèle
+        self._marge = metadonnees.get("rmse_modele")
+        # La RMSE du modèle sert d'indice de confiance : l'erreur habituelle, en points
         self._variables = creer_variables(metadonnees)
         # Crée les cinq variables (budget, durée, année, langue, genres) depuis le JSON
         self._champs: dict = {}  # nom de variable -> variable(s) Tkinter
         # Dictionnaire qui retient, pour chaque variable, l'objet Tkinter qui contient sa saisie
         self._texte_resultat = tk.StringVar(value="Note estimée : —")
         # Le texte du résultat : quand on le change avec .set(), l'écran se met à jour tout seul
+        self._texte_explication = tk.StringVar(
+            value="Remplissez le formulaire,\npuis cliquez sur « Prédire ».")
+        # Une phrase simple sous la note, pour un utilisateur non informaticien
 
         racine.title("Estimateur de note de film")
         # Le titre dans la barre de la vraie fenêtre
@@ -145,6 +170,10 @@ class Application:
                  padx=16, pady=12).pack()
         # Le texte de la note, dans un encadré blanc. textvariable = lié à self._texte_resultat :
         # il change quand on fait .set(...)
+        tk.Label(corps, textvariable=self._texte_explication, bg=corps.cget("bg"),
+                 fg=theme.NOIR, font=theme.POLICE_PETITE, justify="center",
+                 wraplength=300).pack(pady=(8, 0))
+        # L'explication en mots simples (wraplength : retour à la ligne après 300 pixels)
         self._construire_etoiles(corps)
         # Les cinq étoiles juste en dessous
         theme.creer_bouton(corps, "Prédire", self._on_predire).pack(pady=(14, 4))
@@ -183,16 +212,40 @@ class Application:
             # Pleine si son numéro est plus petit que le nombre d'étoiles pleines, vide sinon
 
     def _construire_graphique(self) -> None:
-        """Colonne de droite : emplacement du graphique (ajouté à l'étape suivante)."""
-        conteneur, self._cadre_graphique = theme.creer_fenetre(
+        """Colonne de droite : histogramme des notes, avec la prédiction en surbrillance."""
+        conteneur, corps = theme.creer_fenetre(
             self._racine, "Distribution des notes", theme.BARRE, self._img_etoile)
-        # On garde le corps de la fenêtre dans self._cadre_graphique : c'est là que
-        # le graphique Matplotlib sera inséré plus tard
         conteneur.grid(row=1, column=2, sticky="nsew", padx=14, pady=10)
         # Colonne 2 (à droite) ; « nsew » = la fenêtre remplit tout l'espace disponible
-        theme.creer_etiquette(self._cadre_graphique,
-                              "Le graphique apparaîtra ici.").pack(expand=True)
-        # Un texte provisoire, qui sera remplacé par le vrai graphique
+        self._figure = Figure(figsize=(4.6, 3.4), dpi=100, facecolor=theme.FENETRE)
+        self._axes = self._figure.add_subplot()
+        # Une figure Matplotlib avec un seul graphique (les « axes »)
+        self._canevas = FigureCanvasTkAgg(self._figure, master=corps)
+        self._canevas.get_tk_widget().pack(fill="both", expand=True)
+        # Le canevas transforme la figure en widget Tkinter, placé dans la fenêtre rétro
+        self._tracer_graphique(None)
+        # Premier dessin : la distribution seule, sans prédiction
+
+    def _tracer_graphique(self, note: float | None) -> None:
+        """Redessine l'histogramme des notes ; ajoute une ligne pour « note » si elle est donnée."""
+        ax = self._axes
+        ax.clear()
+        # Efface l'ancien dessin avant de redessiner
+        ax.hist(self._notes, bins=25, color=theme.ORANGE, edgecolor=theme.NOIR,
+                label="Films d'entraînement")
+        ax.axvline(float(np.mean(self._notes)), color=theme.NOIR, linestyle="--",
+                   linewidth=1.5, label="Moyenne des films")
+        if note is not None:
+            ax.axvline(note, color=theme.BARRE_ALT, linewidth=3, label="Votre film")
+        ax.set_title("Où se situe votre film ?", fontsize=10)
+        ax.set_xlabel("Note du public (sur 10)", fontsize=9)
+        ax.set_ylabel("Nombre de films", fontsize=9)
+        ax.tick_params(labelsize=8)
+        ax.set_facecolor(theme.BLANC)
+        ax.legend(fontsize=7, loc="upper left")
+        self._figure.tight_layout()
+        self._canevas.draw()
+        # Demande à Tkinter de réafficher la figure
 
     def _construire_historique(self) -> None:
         """Bandeau du bas : historique des prédictions (ajouté à l'étape suivante)."""
@@ -235,34 +288,84 @@ class Application:
             return
             # ...et s'arrête là : pas de prédiction
         note = self._predire(valeurs)
-        # Tout est valide : appelle la fonction de prédiction
+        # Tout est valide : appelle le modèle
         self._texte_resultat.set(f"Note estimée : {note:.1f} / 10")
-        # Met à jour le texte du résultat, avec une décimale (6.0)
+        # Met à jour le texte du résultat, avec une décimale (6.4)
+        self._texte_explication.set(self._expliquer(note))
         self._afficher_etoiles(note)
-        # Et remplit les étoiles
+        self._tracer_graphique(note)
+        # Remplit les étoiles et place le film sur le graphique
+        try:
+            self._historique.ajouter(valeurs, note)
+        except OSError as erreur:
+            # Le fichier n'a pas pu être écrit (dossier protégé, fichier ouvert dans Excel...)
+            messagebox.showwarning("Historique", f"La prédiction n'a pas pu être enregistrée :\n{erreur}")
+
+    def _expliquer(self, note: float) -> str:
+        """Phrase en mots simples qui accompagne la note (avec l'indice de confiance)."""
+        moyenne = float(np.mean(self._notes))
+        if note >= moyenne + 0.3:
+            position = "au-dessus de la moyenne des films"
+        elif note <= moyenne - 0.3:
+            position = "sous la moyenne des films"
+        else:
+            position = "proche de la moyenne des films"
+        phrase = f"Le public donnerait environ {note:.1f}/10 à ce film, {position} ({moyenne:.1f})."
+        if self._marge is not None:
+            phrase += (f"\nEn moyenne, l'estimation se trompe d'environ ± {self._marge:.1f} point.")
+        return phrase
 
     def _on_afficher_historique(self) -> None:
-        # Appelée quand on clique sur « Afficher » (provisoire, en attendant l'historique)
-        messagebox.showinfo("Historique", "L'historique n'est pas encore disponible.")
+        """Ouvre une petite fenêtre qui liste les prédictions, la plus récente en premier."""
+        lignes = self._historique.lire()
+        if not lignes:
+            messagebox.showinfo("Historique", "Aucune prédiction pour l'instant.")
+            return
+        fenetre = tk.Toplevel(self._racine)
+        # Toplevel : une deuxième fenêtre, qui dépend de la fenêtre principale
+        fenetre.title("Historique des prédictions")
+        fenetre.configure(bg=theme.FOND)
+        texte = tk.Text(fenetre, width=95, height=15, font=theme.POLICE_PETITE,
+                        bg=theme.BLANC, fg=theme.NOIR, relief="solid", bd=2)
+        texte.pack(padx=12, pady=12, fill="both", expand=True)
+        texte.insert("end", f"{'Date':<20}{'Budget ($)':>14}{'Durée':>8}{'Année':>7}"
+                            f"{'Langue':>8}  {'Note':>5}  Genres\n")
+        # Ligne d'en-tête : « :<20 » aligne à gauche sur 20 caractères, « :>14 » à droite sur 14
+        for ligne in lignes:
+            texte.insert("end", f"{ligne['date']:<20}{float(ligne['budget']):>14,.0f}"
+                                f"{float(ligne['runtime']):>8.0f}{float(ligne['annee']):>7.0f}"
+                                f"{ligne['original_language']:>8}  {ligne['note']:>5.1f}  "
+                                f"{ligne['genres']}\n")
+        texte.configure(state="disabled")
+        # Lecture seule : l'utilisateur ne peut pas modifier l'historique affiché
 
 
-def predire_provisoire(valeurs: dict) -> float:
-    """À remplacer par la vraie prédiction quand le modèle sera prêt."""
-    return 6.0
-    # Renvoie toujours 6.0, pour pouvoir tester l'interface sans modèle
+def _verifier_fichiers(*chemins: str) -> str | None:
+    """Renvoie un message d'erreur si un des fichiers n'existe pas, sinon None."""
+    manquants = [os.path.basename(c) for c in chemins if not os.path.exists(c)]
+    if manquants:
+        return (f"Fichier(s) introuvable(s) : {', '.join(manquants)}.\n"
+                "Lancez d'abord : python src/entrainer.py")
+    return None
 
 
 def lancer_application() -> None:
-    """Charge les métadonnées et ouvre la fenêtre."""
-    chemin = os.path.join(os.path.dirname(__file__), "..", "modeles", "metadonnees.json")
-    # Le chemin du JSON, calculé à partir de l'emplacement de ce fichier (donc ça marche
-    # peu importe le dossier d'où on lance le programme)
-    with open(chemin, encoding="utf-8") as f:
-        metadonnees = json.load(f)
-        # Ouvre et lit le fichier de métadonnées ; « with » le referme automatiquement
+    """Vérifie les fichiers, charge les métadonnées et le modèle, puis ouvre la fenêtre."""
     racine = tk.Tk()
     # Crée la fenêtre principale (vide pour l'instant)
-    Application(racine, metadonnees, predire_provisoire)
-    # Construit toute l'interface dedans
+    probleme = _verifier_fichiers(CHEMIN_META, CHEMIN_MODELE)
+    if probleme:
+        racine.withdraw()  # cache la fenêtre vide, on montre seulement le message
+        messagebox.showerror("Démarrage impossible", probleme)
+        racine.destroy()
+        return
+    with open(CHEMIN_META, encoding="utf-8") as f:
+        metadonnees = json.load(f)
+        # Ouvre et lit le fichier de métadonnées ; « with » le referme automatiquement
+    modele = charger_modele(CHEMIN_MODELE)
+    # Le modèle déjà entraîné : il n'est pas ré-entraîné à chaque lancement
+    Application(racine, metadonnees, modele.predire, modele.notes_entrainement,
+                Historique(CHEMIN_HISTORIQUE))
+    # Construit toute l'interface ; on donne la méthode predire du modèle (sans parenthèses)
     racine.mainloop()
     # Lance la boucle qui garde la fenêtre ouverte et attend les clics

@@ -73,7 +73,7 @@ class Application:
         # Met le curseur de souris rétro (sans effet si ça ne marche pas)
         self._creer_images()
         # Dessine toutes les icônes (il faut le faire après la création de la fenêtre)
-        racine.columnconfigure(1, weight=1)
+        racine.columnconfigure(1, weight=0, minsize=340) #La colonne du milieu garde ainsi toujours au moins 340 pixels, et seul le graphique s’adapte quand on change la taille de la fenêtre.
         racine.columnconfigure(2, weight=1)
         # Les colonnes du milieu et de droite s'agrandissent quand on agrandit la fenêtre
         self._construire_titre()
@@ -166,7 +166,7 @@ class Application:
         conteneur.grid(row=1, column=1, sticky="n", padx=14, pady=10)
         # Colonne 1 (celle du milieu), collée en haut
         tk.Label(corps, textvariable=self._texte_resultat, bg=theme.BLANC, fg=theme.NOIR,
-                 font=("Courier New", 16, "bold"), relief="solid", bd=2,
+                 font=("Courier New", 16, "bold"), wraplength= 300, justify= "center", relief="solid", bd=2,
                  padx=16, pady=12).pack()
         # Le texte de la note, dans un encadré blanc. textvariable = lié à self._texte_resultat :
         # il change quand on fait .set(...)

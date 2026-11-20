@@ -23,7 +23,7 @@ class Variable(ABC): # classe parente(hérite de ABC)
     def libelle(self):
         return self._libelle 
 
-    @abstractmethod #
+    @abstractmethod 
     def valider(self, saisie):#Méthode abstraite : chaque classe enfant DOIT la redéfinir à sa façon
         """Renvoie la valeur validée, ou lève DonneeInvalideError."""
 

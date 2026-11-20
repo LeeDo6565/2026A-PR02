@@ -25,7 +25,7 @@ class Historique:
         n'existent pas encore. Lève OSError si le fichier ne peut pas être écrit.
         """
         ligne = {
-            "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), #transforme en annnée-mois-jour-heures heures:minutes:secondes 
             "budget": valeurs["budget"],
             "runtime": valeurs["runtime"],
             "annee": valeurs["annee"],
@@ -55,9 +55,9 @@ class Historique:
         if not os.path.exists(self._chemin):
             return []
         with open(self._chemin, newline="", encoding="utf-8") as f:
-            lignes = list(csv.DictReader(f))
+            lignes = list(csv.DictReader(f)) # lit le fichier comme un dictionnaire 
         for ligne in lignes:
-            ligne["note"] = float(ligne["note"])
+            ligne["note"] = float(ligne["note"]) # convertit chaque note en décimal 
         return sorted(lignes, key=lambda ligne: ligne["date"], reverse=True)
         # lambda (chapitre 7) : la clé de tri est la date ; reverse=True = la plus récente d'abord
 

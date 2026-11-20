@@ -23,7 +23,7 @@ COLONNES_NUMERIQUES = ["budget", "runtime", "annee"]
 def chronometrer(fonction: Callable) -> Callable:
     """Décorateur qui affiche le temps d'exécution de la fonction décorée."""
     @wraps(fonction)  # garde le nom et la docstring de la fonction d'origine
-    def enveloppe(*args, **kwargs):
+    def enveloppe(*args, **kwargs): 
         debut = time.perf_counter()
         resultat = fonction(*args, **kwargs)
         print(f"{fonction.__name__} : {time.perf_counter() - debut:.2f} s")

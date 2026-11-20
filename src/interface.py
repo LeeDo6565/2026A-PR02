@@ -69,8 +69,8 @@ class Application:
         # Le titre dans la barre de la vraie fenêtre
         theme.appliquer_theme(racine)
         # Applique le fond pêche et le style des listes déroulantes
-        icones.appliquer_curseur(racine)
-        # Met le curseur de souris rétro (sans effet si ça ne marche pas)
+        
+        
         self._creer_images()
         # Dessine toutes les icônes (il faut le faire après la création de la fenêtre)
         racine.columnconfigure(1, weight=0, minsize=340) #La colonne du milieu garde ainsi toujours au moins 340 pixels, et seul le graphique s’adapte quand on change la taille de la fenêtre.
